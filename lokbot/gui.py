@@ -115,7 +115,7 @@ class LokBotGUI:
         # Token
         ttk.Label(right_frame, text="X-Access-Token:").grid(row=1, column=0, sticky=tk.W, pady=(0, 5))
         self.token_var = tk.StringVar()
-        token_entry = ttk.Entry(right_frame, textvariable=self.token_var, width=50, show="*")
+        token_entry = ttk.Entry(right_frame, textvariable=self.token_var, width=250, show="*")
         token_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=(0, 5))
         
         # Show/Hide token
@@ -1074,14 +1074,13 @@ class LokBotGUI:
             
             # Tạo command với nhiều cách chạy
             commands = [
-                "# Method 1: Direct command",
                 f"python3 -m lokbot \"{token}\"",
                 "",
                 "# Method 2: Using GUI",
                 "python3 lokbot/gui_main.py",
                 "",
                 "# Method 3: Docker (if available)",
-                f"docker run -e TOKEN=\"{token}\" ghcr.io/hldh214/lok_bot",
+                f"\"{self}\"",
                 "",
                 "# Note: Replace YOUR_TOKEN_HERE with your actual X-Access-Token"
             ]
