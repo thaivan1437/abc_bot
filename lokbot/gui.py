@@ -71,6 +71,9 @@ class LokBotGUI:
         # Tab 4: Logs
         self.create_logs_tab()
         
+        # Tab 5: Terminal
+        self.create_terminal_tab()
+        
         # Status bar
         self.status_var = tk.StringVar()
         self.status_var.set("Ready")
@@ -443,6 +446,96 @@ class LokBotGUI:
         # Initial log message
         self.log_message("LokBot GUI started", "INFO")
     
+    def create_terminal_tab(self):
+        """Tạo tab terminal để hiển thị output của bot"""
+        terminal_frame = ttk.Frame(self.notebook, padding="10")
+        self.notebook.add(terminal_frame, text="💻 Terminal")
+        
+        # Terminal controls
+        terminal_control_frame = ttk.Frame(terminal_frame)
+        terminal_control_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        ttk.Button(terminal_control_frame, text="Clear Terminal", command=self.clear_terminal).grid(row=0, column=0, padx=(0, 10))
+        ttk.Button(terminal_control_frame, text="Save Terminal Output", command=self.save_terminal_output).grid(row=0, column=1, padx=(0, 10))
+        
+        self.terminal_auto_scroll_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(terminal_control_frame, text="Auto Scroll", variable=self.terminal_auto_scroll_var).grid(row=0, column=2)
+        
+        # Terminal output area
+        terminal_text_frame = ttk.Frame(terminal_frame)
+        terminal_text_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        self.terminal_text = tk.Text(terminal_text_frame, wrap=tk.WORD, font=("Consolas", 9), 
+                                   state=tk.DISABLED, bg="#000000", fg="#00ff00", 
+                                   insertbackground="#00ff00")
+        terminal_scrollbar = ttk.Scrollbar(terminal_text_frame, orient=tk.VERTICAL, command=self.terminal_text.yview)
+        self.terminal_text.configure(yscrollcommand=terminal_scrollbar.set)
+        
+        self.terminal_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        terminal_scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        
+        # Configure grid weights
+        terminal_frame.columnconfigure(0, weight=1)
+        terminal_frame.rowconfigure(1, weight=1)
+        terminal_text_frame.columnconfigure(0, weight=1)
+        terminal_text_frame.rowconfigure(0, weight=1)
+        
+        # Initial terminal message
+        self.terminal_message("Terminal ready. Start a bot to see output here.", "INFO")
+    
+    def terminal_message(self, message, level="INFO"):
+        """Thêm message vào terminal"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        terminal_entry = f"[{timestamp}] {level}: {message}\n"
+        
+        self.terminal_text.config(state=tk.NORMAL)
+        self.terminal_text.insert(tk.END, terminal_entry)
+        
+        # Color coding for terminal
+        if level == "ERROR":
+            self.terminal_text.tag_add("terminal_error", f"end-{len(terminal_entry)}c", "end-1c")
+            self.terminal_text.tag_config("terminal_error", foreground="#ff6b6b")
+        elif level == "WARNING":
+            self.terminal_text.tag_add("terminal_warning", f"end-{len(terminal_entry)}c", "end-1c")
+            self.terminal_text.tag_config("terminal_warning", foreground="#ffa500")
+        elif level == "BOT":
+            self.terminal_text.tag_add("terminal_bot", f"end-{len(terminal_entry)}c", "end-1c")
+            self.terminal_text.tag_config("terminal_bot", foreground="#00ffff")
+        else:
+            self.terminal_text.tag_add("terminal_info", f"end-{len(terminal_entry)}c", "end-1c")
+            self.terminal_text.tag_config("terminal_info", foreground="#00ff00")
+        
+        self.terminal_text.config(state=tk.DISABLED)
+        
+        # Auto scroll
+        if self.terminal_auto_scroll_var.get():
+            self.terminal_text.see(tk.END)
+    
+    def clear_terminal(self):
+        """Clear terminal"""
+        self.terminal_text.config(state=tk.NORMAL)
+        self.terminal_text.delete(1.0, tk.END)
+        self.terminal_text.config(state=tk.DISABLED)
+        self.terminal_message("Terminal cleared", "INFO")
+    
+    def save_terminal_output(self):
+        """Save terminal output to file"""
+        try:
+            filename = filedialog.asksaveasfilename(
+                defaultextension=".txt",
+                filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+                title="Save Terminal Output"
+            )
+            if filename:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    content = self.terminal_text.get(1.0, tk.END)
+                    f.write(content)
+                self.terminal_message(f"Terminal output saved to {filename}", "INFO")
+                messagebox.showinfo("Success", f"Terminal output saved to {filename}")
+        except Exception as e:
+            self.terminal_message(f"Error saving terminal output: {str(e)}", "ERROR")
+            messagebox.showerror("Error", f"Failed to save terminal output: {str(e)}")
+    
     def load_profiles(self):
         """Load profiles từ file"""
         try:
@@ -624,10 +717,16 @@ class LokBotGUI:
                            args=(profile_name, process), daemon=True).start()
             
             self.log_message(f"Started bot for profile '{profile_name}'", "INFO")
+            self.terminal_message(f"Started bot for profile '{profile_name}' with command: python -m lokbot {token[:20]}...", "INFO")
+            
+            # Auto switch to Terminal tab to show output
+            self.notebook.select(4)  # Terminal tab is at index 4
+            
             self.save_profiles()
             
         except Exception as e:
             self.log_message(f"Error starting bot: {str(e)}", "ERROR")
+            self.terminal_message(f"Error starting bot: {str(e)}", "ERROR")
             messagebox.showerror("Error", f"Failed to start bot: {str(e)}")
     
     def stop_bot(self):
@@ -653,6 +752,7 @@ class LokBotGUI:
                 self.stop_btn.config(state=tk.DISABLED)
             
             self.log_message(f"Stopped bot for profile '{profile_name}'", "INFO")
+            self.terminal_message(f"Stopped bot for profile '{profile_name}'", "INFO")
             self.save_profiles()
     
     def read_bot_output(self, profile_name, process):
@@ -663,14 +763,19 @@ class LokBotGUI:
                 if output == '' and process.poll() is not None:
                     break
                 if output:
-                    self.log_message(f"[{profile_name}] {output.strip()}", "BOT")
+                    output_stripped = output.strip()
+                    # Display in both logs tab and terminal tab
+                    self.log_message(f"[{profile_name}] {output_stripped}", "BOT")
+                    self.terminal_message(f"[{profile_name}] {output_stripped}", "BOT")
         except Exception as e:
             self.log_message(f"Error reading bot output: {str(e)}", "ERROR")
+            self.terminal_message(f"Error reading bot output: {str(e)}", "ERROR")
         finally:
             # Process ended
             if profile_name in self.running_processes:
                 del self.running_processes[profile_name]
                 self.profiles[profile_name]['status'] = 'Stopped'
+                self.terminal_message(f"Bot process for '{profile_name}' has ended", "WARNING")
                 
                 # Update UI if this is the selected profile
                 if self.profile_name_var.get() == profile_name:
@@ -1074,20 +1179,27 @@ class LokBotGUI:
             
             # Tạo command với nhiều cách chạy
             commands = [
+                "# Main Command to Run Bot:",
+                f"python -m lokbot \"{token}\"",
+                "",
+                "# Alternative commands:",
                 f"python3 -m lokbot \"{token}\"",
                 "",
-                "# Method 2: Using GUI",
-                "python3 lokbot/gui_main.py",
+                "# Using GUI (this application):",
+                "python -m lokbot.gui",
                 "",
-                "# Method 3: Docker (if available)",
-                f"\"{self}\"",
+                "# Notes:",
+                "# - All bot output will be displayed in the Terminal tab when started from GUI",
+                "# - Use the command above to run bot directly in terminal",
+                "# - Replace token with your actual X-Access-Token if needed",
                 "",
-                "# Note: Replace YOUR_TOKEN_HERE with your actual X-Access-Token"
+                f"# Current profile: {profile_name}",
+                f"# Status: {self.profiles[profile_name].get('status', 'Unknown')}"
             ]
             
             command_text = "\n".join(commands)
         else:
-            command_text = "# Select a profile to see terminal commands\npython3 -m lokbot YOUR_TOKEN_HERE"
+            command_text = "# Select a profile to see terminal commands\n# Example:\npython -m lokbot YOUR_TOKEN_HERE\n\n# All bot output will be shown in Terminal tab when using GUI"
         
         # Update command display
         self.command_text.config(state=tk.NORMAL)
@@ -1131,6 +1243,11 @@ class LokBotGUI:
                            args=(profile_name, process), daemon=True).start()
             
             self.log_message(f"Started bot for profile '{profile_name}' from Status tab", "INFO")
+            self.terminal_message(f"Started bot for profile '{profile_name}' from Status tab with command: python -m lokbot {token[:20]}...", "INFO")
+            
+            # Auto switch to Terminal tab to show output
+            self.notebook.select(4)  # Terminal tab is at index 4
+            
             self.save_profiles()
             
             # Update display
@@ -1139,6 +1256,7 @@ class LokBotGUI:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to start bot: {str(e)}")
             self.log_message(f"Failed to start bot for '{profile_name}': {str(e)}", "ERROR")
+            self.terminal_message(f"Failed to start bot for '{profile_name}': {str(e)}", "ERROR")
 
     def update_status_timer(self):
         """Timer để cập nhật status"""
