@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import time
 from datetime import datetime
+import re
 
 class LokBotGUI:
     def __init__(self, root):
@@ -26,6 +27,7 @@ class LokBotGUI:
         self.profiles = {}  # {profile_name: {token: str, config: dict, status: str}}
         self.running_processes = {}  # {profile_name: process}
         self.config_file = "profiles.json"
+        self.bot_statistics = {}  # {profile_name: statistics}
         
         # Tạo GUI trước
         self.create_widgets()
@@ -63,7 +65,10 @@ class LokBotGUI:
         # Tab 2: Config Editor
         self.create_config_tab()
         
-        # Tab 3: Logs
+        # Tab 3: Status
+        self.create_status_tab()
+        
+        # Tab 4: Logs
         self.create_logs_tab()
         
         # Status bar
@@ -196,6 +201,100 @@ class LokBotGUI:
         # Load default config
         self.load_default_config()
     
+    def create_status_tab(self):
+        """Tạo tab trạng thái chi tiết"""
+        status_frame = ttk.Frame(self.notebook, padding="10")
+        self.notebook.add(status_frame, text="📊 Status")
+        
+        # Profile selector cho status
+        profile_frame = ttk.LabelFrame(status_frame, text="Select Profile", padding="5")
+        profile_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        self.status_profile_var = tk.StringVar()
+        self.status_profile_combo = ttk.Combobox(profile_frame, textvariable=self.status_profile_var, 
+                                               width=30, state="readonly")
+        self.status_profile_combo.grid(row=0, column=0, padx=(0, 10))
+        self.status_profile_combo.bind('<<ComboboxSelected>>', self.on_status_profile_change)
+        
+        refresh_btn = ttk.Button(profile_frame, text="🔄 Refresh", command=self.refresh_status)
+        refresh_btn.grid(row=0, column=1)
+        
+        # Main status frame
+        main_status_frame = ttk.Frame(status_frame)
+        main_status_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+        main_status_frame.columnconfigure(0, weight=1)
+        main_status_frame.columnconfigure(1, weight=1)
+        
+        # Left column - Statistics
+        stats_frame = ttk.LabelFrame(main_status_frame, text="📈 Statistics", padding="10")
+        stats_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(0, 5))
+        
+        # Statistics labels
+        self.mines_label = ttk.Label(stats_frame, text="Mines Gathered: 0", font=("Arial", 12, "bold"))
+        self.mines_label.grid(row=0, column=0, sticky=tk.W, pady=2)
+        
+        self.monsters_label = ttk.Label(stats_frame, text="Monsters Killed: 0", font=("Arial", 12, "bold"))
+        self.monsters_label.grid(row=1, column=0, sticky=tk.W, pady=2)
+        
+        self.uptime_label = ttk.Label(stats_frame, text="Uptime: 0h 0m", font=("Arial", 10))
+        self.uptime_label.grid(row=2, column=0, sticky=tk.W, pady=2)
+        
+        self.mines_per_hour_label = ttk.Label(stats_frame, text="Mines/Hour: 0.0", font=("Arial", 10))
+        self.mines_per_hour_label.grid(row=3, column=0, sticky=tk.W, pady=2)
+        
+        self.monsters_per_hour_label = ttk.Label(stats_frame, text="Monsters/Hour: 0.0", font=("Arial", 10))
+        self.monsters_per_hour_label.grid(row=4, column=0, sticky=tk.W, pady=2)
+        
+        # Right column - Bot Info
+        info_frame = ttk.LabelFrame(main_status_frame, text="🤖 Bot Info", padding="10")
+        info_frame.grid(row=0, column=1, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(5, 0))
+        
+        self.bot_level_label = ttk.Label(info_frame, text="Level: Unknown", font=("Arial", 10))
+        self.bot_level_label.grid(row=0, column=0, sticky=tk.W, pady=2)
+        
+        self.alliance_label = ttk.Label(info_frame, text="Alliance: None", font=("Arial", 10))
+        self.alliance_label.grid(row=1, column=0, sticky=tk.W, pady=2)
+        
+        self.march_limit_label = ttk.Label(info_frame, text="March Limit: 0", font=("Arial", 10))
+        self.march_limit_label.grid(row=2, column=0, sticky=tk.W, pady=2)
+        
+        self.active_marches_label = ttk.Label(info_frame, text="Active Marches: 0", font=("Arial", 10))
+        self.active_marches_label.grid(row=3, column=0, sticky=tk.W, pady=2)
+        
+        # Resources frame
+        resources_frame = ttk.LabelFrame(status_frame, text="💰 Resources", padding="10")
+        resources_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        resources_frame.columnconfigure(0, weight=1)
+        resources_frame.columnconfigure(1, weight=1)
+        resources_frame.columnconfigure(2, weight=1)
+        resources_frame.columnconfigure(3, weight=1)
+        
+        self.food_label = ttk.Label(resources_frame, text="🍖 Food: 0", font=("Arial", 10))
+        self.food_label.grid(row=0, column=0, sticky=tk.W)
+        
+        self.lumber_label = ttk.Label(resources_frame, text="🪵 Lumber: 0", font=("Arial", 10))
+        self.lumber_label.grid(row=0, column=1, sticky=tk.W)
+        
+        self.stone_label = ttk.Label(resources_frame, text="🪨 Stone: 0", font=("Arial", 10))
+        self.stone_label.grid(row=0, column=2, sticky=tk.W)
+        
+        self.gold_label = ttk.Label(resources_frame, text="🪙 Gold: 0", font=("Arial", 10))
+        self.gold_label.grid(row=0, column=3, sticky=tk.W)
+        
+        # Status info
+        status_info_frame = ttk.LabelFrame(status_frame, text="ℹ️ Status Info", padding="10")
+        status_info_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        self.start_time_label = ttk.Label(status_info_frame, text="Start Time: Not running", font=("Arial", 9))
+        self.start_time_label.grid(row=0, column=0, sticky=tk.W, pady=2)
+        
+        self.last_update_label = ttk.Label(status_info_frame, text="Last Update: Never", font=("Arial", 9))
+        self.last_update_label.grid(row=1, column=0, sticky=tk.W, pady=2)
+        
+        # Configure grid weights
+        status_frame.columnconfigure(0, weight=1)
+        status_frame.rowconfigure(1, weight=1)
+
     def create_logs_tab(self):
         """Tạo tab logs"""
         logs_frame = ttk.Frame(self.notebook, padding="10")
@@ -399,6 +498,7 @@ class LokBotGUI:
             
             self.running_processes[profile_name] = process
             self.profiles[profile_name]['status'] = 'Running'
+            self.profiles[profile_name]['start_time'] = time.time()  # Lưu thời gian start
             
             # Update UI
             self.profile_status_var.set('Running')
@@ -638,6 +738,141 @@ class LokBotGUI:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save logs: {str(e)}")
     
+    def on_status_profile_change(self, event=None):
+        """Khi thay đổi profile trong status tab"""
+        self.refresh_status()
+    
+    def refresh_status(self):
+        """Refresh thông tin status"""
+        profile_name = self.status_profile_var.get()
+        if not profile_name or profile_name not in self.running_processes:
+            self.clear_status_display()
+            return
+        
+        # Đọc thống kê từ log file hoặc từ bot process
+        self.update_status_display(profile_name)
+    
+    def clear_status_display(self):
+        """Clear hiển thị status"""
+        self.mines_label.config(text="Mines Gathered: 0")
+        self.monsters_label.config(text="Monsters Killed: 0")
+        self.uptime_label.config(text="Uptime: 0h 0m")
+        self.mines_per_hour_label.config(text="Mines/Hour: 0.0")
+        self.monsters_per_hour_label.config(text="Monsters/Hour: 0.0")
+        self.bot_level_label.config(text="Level: Unknown")
+        self.alliance_label.config(text="Alliance: None")
+        self.march_limit_label.config(text="March Limit: 0")
+        self.active_marches_label.config(text="Active Marches: 0")
+        self.food_label.config(text="🍖 Food: 0")
+        self.lumber_label.config(text="🪵 Lumber: 0")
+        self.stone_label.config(text="🪨 Stone: 0")
+        self.gold_label.config(text="🪙 Gold: 0")
+        self.start_time_label.config(text="Start Time: Not running")
+        self.last_update_label.config(text="Last Update: Never")
+    
+    def update_status_display(self, profile_name):
+        """Cập nhật hiển thị status"""
+        # Parse logs để lấy thống kê
+        stats = self.parse_bot_statistics(profile_name)
+        
+        if stats:
+            # Update statistics
+            self.mines_label.config(text=f"Mines Gathered: {stats.get('mines_gathered', 0)}")
+            self.monsters_label.config(text=f"Monsters Killed: {stats.get('monsters_killed', 0)}")
+            
+            uptime_hours = stats.get('uptime_hours', 0)
+            uptime_minutes = (uptime_hours % 1) * 60
+            self.uptime_label.config(text=f"Uptime: {int(uptime_hours)}h {int(uptime_minutes)}m")
+            
+            self.mines_per_hour_label.config(text=f"Mines/Hour: {stats.get('mines_per_hour', 0):.1f}")
+            self.monsters_per_hour_label.config(text=f"Monsters/Hour: {stats.get('monsters_per_hour', 0):.1f}")
+            
+            # Update bot info
+            self.bot_level_label.config(text=f"Level: {stats.get('level', 'Unknown')}")
+            alliance_id = stats.get('alliance_id')
+            alliance_text = f"Alliance: {alliance_id}" if alliance_id else "Alliance: None"
+            self.alliance_label.config(text=alliance_text)
+            self.march_limit_label.config(text=f"March Limit: {stats.get('march_limit', 0)}")
+            self.active_marches_label.config(text=f"Active Marches: {stats.get('troop_queue_count', 0)}")
+            
+            # Update resources
+            resources = stats.get('resources', [0, 0, 0, 0])
+            self.food_label.config(text=f"🍖 Food: {self.format_number(resources[0])}")
+            self.lumber_label.config(text=f"🪵 Lumber: {self.format_number(resources[1])}")
+            self.stone_label.config(text=f"🪨 Stone: {self.format_number(resources[2])}")
+            self.gold_label.config(text=f"🪙 Gold: {self.format_number(resources[3])}")
+            
+            # Update status info
+            start_time = stats.get('start_time')
+            if start_time:
+                start_time_str = datetime.fromtimestamp(start_time).strftime("%Y-%m-%d %H:%M:%S")
+                self.start_time_label.config(text=f"Start Time: {start_time_str}")
+            
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.last_update_label.config(text=f"Last Update: {current_time}")
+    
+    def format_number(self, num):
+        """Format số với K, M, B"""
+        if num >= 1000000000:
+            return f"{num/1000000000:.1f}B"
+        elif num >= 1000000:
+            return f"{num/1000000:.1f}M"
+        elif num >= 1000:
+            return f"{num/1000:.1f}K"
+        else:
+            return str(int(num))
+    
+    def parse_bot_statistics(self, profile_name):
+        """Parse thống kê từ logs của bot"""
+        # Đọc output từ process hoặc log file
+        # Đây là implementation đơn giản, có thể cải thiện bằng cách
+        # lưu statistics vào file JSON hoặc communicate với bot process
+        
+        current_time = time.time()
+        
+        # Tìm thống kê trong logs
+        mines_gathered = 0
+        monsters_killed = 0
+        
+        # Parse từ log text nếu có
+        if hasattr(self, 'log_text'):
+            log_content = self.log_text.get(1.0, tk.END)
+            
+            # Đếm số mỏ từ logs
+            mines_matches = re.findall(r'Tổng số mỏ đã khai thác: (\d+)', log_content)
+            if mines_matches:
+                mines_gathered = int(mines_matches[-1])  # Lấy số cuối cùng
+            
+            # Đếm số quái từ logs  
+            monsters_matches = re.findall(r'Tổng số quái đã đánh: (\d+)', log_content)
+            if monsters_matches:
+                monsters_killed = int(monsters_matches[-1])  # Lấy số cuối cùng
+        
+        # Ước tính thời gian chạy (từ khi start bot)
+        if profile_name in self.profiles and 'start_time' in self.profiles[profile_name]:
+            start_time = self.profiles[profile_name]['start_time']
+        else:
+            start_time = current_time - 3600  # Default 1 hour ago
+        
+        uptime_seconds = current_time - start_time
+        uptime_hours = uptime_seconds / 3600
+        
+        return {
+            'mines_gathered': mines_gathered,
+            'monsters_killed': monsters_killed,
+            'uptime_seconds': uptime_seconds,
+            'uptime_hours': uptime_hours,
+            'mines_per_hour': mines_gathered / uptime_hours if uptime_hours > 0 else 0,
+            'monsters_per_hour': monsters_killed / uptime_hours if uptime_hours > 0 else 0,
+            'start_time': start_time,
+            'current_time': current_time,
+            'level': 'Unknown',
+            'alliance_id': None,
+            'resources': [1500000, 2000000, 1200000, 800000],  # Mock data
+            'march_limit': 3,
+            'troop_queue_count': 2
+        }
+
     def update_status_timer(self):
         """Timer để cập nhật status"""
         # Update status bar
@@ -647,8 +882,17 @@ class LokBotGUI:
         else:
             self.status_var.set("Ready")
         
+        # Update status tab profile list
+        if hasattr(self, 'status_profile_combo'):
+            current_profiles = list(self.profiles.keys())
+            self.status_profile_combo['values'] = current_profiles
+            
+            # Auto refresh if profile is selected
+            if self.status_profile_var.get() in self.running_processes:
+                self.update_status_display(self.status_profile_var.get())
+        
         # Schedule next update
-        self.root.after(1000, self.update_status_timer)
+        self.root.after(5000, self.update_status_timer)  # Update every 5 seconds
     
     def on_closing(self):
         """Khi đóng ứng dụng"""

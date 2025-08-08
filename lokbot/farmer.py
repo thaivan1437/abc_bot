@@ -87,8 +87,10 @@ class LokFarmer:
         self.kingdom_enter = self.api.kingdom_enter()
         self.alliance_id = self.kingdom_enter.get('kingdom', {}).get('allianceId')
 
-        # Thêm biến đếm số mỏ đã khai thác
+        # Thêm biến đếm số mỏ đã khai thác và quái đã đánh
         self.mines_gathered = 0
+        self.monsters_killed = 0
+        self.start_time = time.time()
 
         self.api.auth_set_device_info({
             "build": "global",
@@ -639,6 +641,11 @@ class LokFarmer:
             return False
 
         self._start_march(to_loc, march_troops, MARCH_TYPE_MONSTER)
+        
+        # Tăng biến đếm khi tấn công quái thành công
+        self.monsters_killed += 1
+        # Ghi log tổng số quái đã đánh
+        logger.info(f"Quái tấn công thành công: {each_obj.get('code')} tại {to_loc}. Tổng số quái đã đánh: {self.monsters_killed}")
         return True
 
     @tenacity.retry(
@@ -1431,3 +1438,25 @@ class LokFarmer:
             )
         except OtherException:
             pass
+    
+    def get_statistics(self):
+        """Lấy thống kê bot"""
+        current_time = time.time()
+        uptime_seconds = current_time - self.start_time
+        uptime_hours = uptime_seconds / 3600
+        
+        return {
+            'mines_gathered': self.mines_gathered,
+            'monsters_killed': self.monsters_killed,
+            'uptime_seconds': uptime_seconds,
+            'uptime_hours': uptime_hours,
+            'mines_per_hour': self.mines_gathered / uptime_hours if uptime_hours > 0 else 0,
+            'monsters_per_hour': self.monsters_killed / uptime_hours if uptime_hours > 0 else 0,
+            'start_time': self.start_time,
+            'current_time': current_time,
+            'level': getattr(self, 'level', 'Unknown'),
+            'alliance_id': self.alliance_id,
+            'resources': self.resources,
+            'march_limit': self.march_limit,
+            'troop_queue_count': len(self.troop_queue)
+        }
