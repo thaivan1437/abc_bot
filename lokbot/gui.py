@@ -299,7 +299,7 @@ class LokBotGUI:
         # Command display
         ttk.Label(terminal_frame, text="Command to run bot:", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
         
-        self.command_text = tk.Text(terminal_frame, height=3, width=80, wrap=tk.WORD, 
+        self.command_text = tk.Text(terminal_frame, height=15, width=80, wrap=tk.WORD, 
                                    font=("Consolas", 10), bg="#2d2d2d", fg="#ffffff",
                                    insertbackground="#ffffff")
         self.command_text.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
