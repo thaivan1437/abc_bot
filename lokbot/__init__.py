@@ -31,7 +31,7 @@ socf_logger = logging.getLogger(f'{__name__}.socf')
 sock_logger = logging.getLogger(f'{__name__}.sock')
 socc_logger = logging.getLogger(f'{__name__}.socc')
 
-if config.get('socketio').get('debug'):
+if config.get('socketio', {}).get('debug'):
     socf_logger.setLevel(logging.DEBUG)
     sock_logger.setLevel(logging.DEBUG)
     socc_logger.setLevel(logging.DEBUG)
@@ -58,4 +58,7 @@ socc_logger.addHandler(socc_file_channel)
 
 logger.remove()
 logger.add(project_root.joinpath('data/main.log'), rotation='1 hour', retention=48)
-logger.add(sys.stdout, colorize=True)
+
+# Only add stdout logger if stdout is available (not None in built executables)
+if sys.stdout is not None:
+    logger.add(sys.stdout, colorize=True)
