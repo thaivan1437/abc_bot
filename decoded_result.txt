@@ -1,0 +1,151 @@
+=== KẾT QUẢ DECODE ĐOẠN MÃ LOK BOT ===
+
+Password XOR: .n695dasdg441.
+Độ dài dữ liệu: 1184 bytes
+
+=== THÔNG TIN CHÍNH ===
+From ID: 688c54dce04efb80780c7fb9
+March Type: 5
+To Location: [17, 1095, 1238] (X=17, Y=1095, Z=1238)
+
+=== THÔNG TIN QUÂN ĐỘI ===
+Troop 1:
+  - Code: 50100305
+  - Level: 0
+  - Amount: 10,000
+  - HP: 0
+  - Attack: 0
+  - Defense: 0
+
+=== DỮ LIỆU JSON ĐẦY ĐỦ ===
+{
+  "fromId": "688c54dce04efb80780c7fb9",
+  "marchType": 5,
+  "toLoc": [
+    17,
+    1095,
+    1238
+  ],
+  "marchTroops": [
+    {
+      "code": 50100305,
+      "level": 0,
+      "select": 0,
+      "amount": 10000,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    },
+    {
+      "code": 50100104,
+      "level": 0,
+      "select": 0,
+      "amount": 0,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    },
+    {
+      "code": 50100204,
+      "level": 0,
+      "select": 0,
+      "amount": 0,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    },
+    {
+      "code": 50100304,
+      "level": 0,
+      "select": 0,
+      "amount": 0,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    },
+    {
+      "code": 50100103,
+      "level": 0,
+      "select": 0,
+      "amount": 0,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    },
+    {
+      "code": 50100203,
+      "level": 0,
+      "select": 0,
+      "amount": 0,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    },
+    {
+      "code": 50100303,
+      "level": 0,
+      "select": 0,
+      "amount": 0,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    },
+    {
+      "code": 50100102,
+      "level": 0,
+      "select": 0,
+      "amount": 0,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    },
+    {
+      "code": 50100202,
+      "level": 0,
+      "select": 0,
+      "amount": 0,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    },
+    {
+      "code": 50100302,
+      "level": 0,
+      "select": 0,
+      "amount": 0,
+      "dead": 0,
+      "wounded": 0,
+      "hp": 0,
+      "attack": 0,
+      "defense": 0,
+      "seq": 0
+    }
+  ]
+}

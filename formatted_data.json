@@ -1,0 +1,98 @@
+[
+  {
+    "_id": "6894be7311daa35bd243ad63",
+    "isRally": true,
+    "fromLoc": [17, 1091, 1232],
+    "toLoc": [17, 1084, 1225],
+    "isBF": false,
+    "marchType": 5,
+    "kingdomId": "6707ba210596063d00590aa1",
+    "allianceId": "6166680e7c65660a19cfef40",
+    "distance": 10,
+    "time": 300,
+    "startTime": "2025-08-07T14:55:47.902Z",
+    "endTime": "2025-08-07T15:00:47.902Z",
+    "param": {},
+    "state": 4,
+    "targetMonsterId": "689433fd6d39cbc1c805b112",
+    "message": "",
+    "fromAlliance": {
+      "_id": "6166680e7c65660a19cfef40",
+      "name": "SHADOWPIRATE",
+      "tag": "SVG$",
+      "flag": {
+        "backShape": 16,
+        "patternShape": 0
+      }
+    },
+    "leaderKingdom": {
+      "_id": "6707ba210596063d00590aa1",
+      "worldId": 17,
+      "name": "BestRoxie",
+      "power": 55624490,
+      "faceCode": 13
+    },
+    "targetMonster": {
+      "_id": "689433fd6d39cbc1c805b112",
+      "loc": [17, 1084, 1225],
+      "level": 3,
+      "code": 20200201,
+      "param": {
+        "value": 244575
+      },
+      "state": 1,
+      "expired": "2025-08-07T20:50:22.636Z"
+    },
+    "maxTroops": 2470000,
+    "isJoined": false,
+    "numTroops": 10000
+  },
+  {
+    "_id": "6894beaf908e9635794ebff6",
+    "isRally": true,
+    "fromLoc": [17, 1091, 1232],
+    "toLoc": [17, 1062, 1235],
+    "isBF": false,
+    "marchType": 5,
+    "kingdomId": "6707ba210596063d00590aa1",
+    "allianceId": "6166680e7c65660a19cfef40",
+    "distance": 30,
+    "time": 300,
+    "startTime": "2025-08-07T14:56:47.549Z",
+    "endTime": "2025-08-07T15:01:47.549Z",
+    "param": {},
+    "state": 4,
+    "targetMonsterId": "68947a466d39cbc1c80d8453",
+    "message": "",
+    "fromAlliance": {
+      "_id": "6166680e7c65660a19cfef40",
+      "name": "SHADOWPIRATE",
+      "tag": "SVG$",
+      "flag": {
+        "backShape": 16,
+        "patternShape": 0
+      }
+    },
+    "leaderKingdom": {
+      "_id": "6707ba210596063d00590aa1",
+      "worldId": 17,
+      "name": "BestRoxie",
+      "power": 55624490,
+      "faceCode": 13
+    },
+    "targetMonster": {
+      "_id": "68947a466d39cbc1c80d8453",
+      "loc": [17, 1062, 1235],
+      "level": 4,
+      "code": 20200201,
+      "param": {
+        "value": 500000
+      },
+      "state": 1,
+      "expired": "2025-08-08T03:31:58.470Z"
+    },
+    "maxTroops": 2470000,
+    "isJoined": false,
+    "numTroops": 10000
+  }
+]

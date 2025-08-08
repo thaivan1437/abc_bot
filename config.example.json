@@ -1,0 +1,146 @@
+{
+  "main": {
+    "jobs": [
+      {
+        "name": "hospital_recover",
+        "enabled": false,
+        "interval": {
+          "start": 90,
+          "end": 180
+        }
+      },
+      {
+        "name": "wall_repair",
+        "enabled": false,
+        "interval": {
+          "start": 30,
+          "end": 90
+        }
+      },
+      {
+        "name": "skill_use",
+        "enabled": true,
+        "kwargs": {
+          "id_skill": [10001, 10002]
+        },
+        "interval": {
+          "start": 1,
+          "end": 490
+        }
+      },
+      {
+        "name": "alliance_farmer",
+        "enabled": true,
+        "kwargs": {
+          "gift_claim": true,
+          "help_all": true,
+          "research_donate": true,
+          "shop_auto_buy_item_code_list": []
+        },
+        "interval": {
+          "start": 120,
+          "end": 200
+        }
+      },
+      {
+        "name": "mail_claim",
+        "enabled": false,
+        "interval": {
+          "start": 120,
+          "end": 200
+        }
+      },
+      {
+        "name": "caravan_farmer",
+        "enabled": false,
+        "interval": {
+          "start": 120,
+          "end": 200
+        }
+      },
+      {
+        "name": "use_resource_in_item_list",
+        "enabled": false,
+        "interval": {
+          "start": 120,
+          "end": 200
+        }
+      },
+      {
+        "name": "vip_chest_claim",
+        "enabled": true,
+        "interval": {
+          "start": 120,
+          "end": 200
+        }
+      },
+      {
+        "name": "harvester",
+        "enabled": true,
+        "interval": {
+          "start": 10,
+          "end": 20
+        }
+      },
+      {
+        "name": "socf_thread",
+        "enabled": true,
+        "kwargs": {
+          "targets": [
+            {
+              "code": 20100105,
+              "level": [1]
+            }
+          ],
+          "radius": 8,
+          "share_to": {
+            "chat_channels": [
+              
+            ]
+          }
+        },
+        "interval": {
+          "start": 1,
+          "end": 1
+        }
+      }
+    ],
+    "threads": [
+      {
+        "name": "free_chest_farmer_thread",
+        "enabled": true
+      },
+      {
+        "name": "quest_monitor_thread",
+        "enabled": true
+      },
+      {
+        "name": "building_farmer_thread",
+        "enabled": false,
+        "kwargs": {
+          "speedup": true
+        }
+      },
+      {
+        "name": "academy_farmer_thread",
+        "enabled": false,
+        "kwargs": {
+          "to_max_level": false,
+          "speedup": true
+        }
+      },
+      {
+        "name": "train_troop_thread",
+        "enabled": false,
+        "kwargs": {
+          "troop_code": 50100101,
+          "speedup": true,
+          "interval": 3600
+        }
+      }
+    ]
+  },
+  "socketio": {
+    "debug": false
+  }
+}
