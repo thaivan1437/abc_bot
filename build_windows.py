@@ -91,25 +91,38 @@ def install_dependencies():
     
     if not socketio_success:
         print("❌ Socket.IO installation failed!")
-        print("💡 Chạy script đặc biệt để fix:")
-        print("   python fix_socketio.py")
-        print("💡 Hoặc tiếp tục với mock socketio (một số tính năng sẽ bị disabled)")
+        print("💡 Các options:")
+        print("   1. python debug_environment.py  # Debug chi tiết")
+        print("   2. python fix_socketio.py       # Thử fix lại")
+        print("   3. Tiếp tục với mock socketio    # Một số tính năng disabled")
         
-        response = input("Tiếp tục build với mock socketio? (y/N): ").lower()
-        if response != 'y':
-            return False
+        print("\n🔍 Checking if socketio is actually available...")
         
-        # Copy fallback file
+        # Double check socketio
         try:
-            import shutil
-            if os.path.exists("socketio_fallback.py"):
-                print("✅ Sử dụng socketio fallback")
-            else:
-                print("❌ Không tìm thấy socketio_fallback.py")
+            import socketio
+            import engineio
+            print("✅ Actually, socketio IS available!")
+            print("This might be a different issue...")
+            socketio_success = True
+        except ImportError:
+            print("❌ Confirmed: socketio not available")
+            
+            response = input("\nTiếp tục build với mock socketio? (y/N): ").lower()
+            if response != 'y':
+                print("💡 Chạy: python debug_environment.py để debug")
                 return False
-        except Exception as e:
-            print(f"❌ Lỗi setup fallback: {str(e)}")
-            return False
+            
+            # Setup fallback
+            try:
+                if os.path.exists("socketio_fallback.py"):
+                    print("✅ Sử dụng socketio fallback")
+                else:
+                    print("❌ Không tìm thấy socketio_fallback.py")
+                    return False
+            except Exception as e:
+                print(f"❌ Lỗi setup fallback: {str(e)}")
+                return False
     
     return True
 
