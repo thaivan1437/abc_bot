@@ -40,23 +40,75 @@ def install_dependencies():
     """Cài đặt tất cả dependencies cần thiết"""
     print("\n📦 Cài đặt dependencies...")
     
-    dependencies = [
+    # Dependencies cơ bản (ít có vấn đề)
+    basic_dependencies = [
         "pyinstaller>=5.0",
         "fire==0.5.*", 
         "loguru==0.7.*",
         "tenacity==8.2.*",
         "schedule==1.2.*",
         "ratelimit==2.2.*",
-        "numpy==1.24.*",
-        "httpx[http2]==0.24.*",
         "pyjwt==2.7.*",
-        "arrow==1.2.*",
-        "python-socketio<5",
-        "python-engineio"
+        "arrow==1.2.*"
     ]
     
-    for dep in dependencies:
+    # Dependencies phức tạp (có thể có vấn đề)
+    complex_dependencies = [
+        "numpy==1.24.*",
+        "httpx[http2]==0.24.*"
+    ]
+    
+    # Socket.IO dependencies (thường có vấn đề nhất)
+    socketio_dependencies = [
+        "python-engineio",
+        "python-socketio<5"
+    ]
+    
+    # Cài basic dependencies
+    print("🔧 Cài đặt basic dependencies...")
+    for dep in basic_dependencies:
         if not run_command(f"pip install {dep}", f"Cài đặt {dep}"):
+            print(f"❌ Failed to install {dep}")
+            return False
+    
+    # Cài complex dependencies
+    print("🔧 Cài đặt complex dependencies...")
+    for dep in complex_dependencies:
+        if not run_command(f"pip install {dep}", f"Cài đặt {dep}"):
+            print(f"⚠️ Failed to install {dep}, trying alternative...")
+            # Thử cách khác
+            if not run_command(f"pip install --no-cache-dir {dep}", f"Cài đặt {dep} (no cache)"):
+                print(f"❌ Cannot install {dep}")
+                return False
+    
+    # Cài Socket.IO dependencies (có thể skip nếu fail)
+    print("🔧 Cài đặt Socket.IO dependencies...")
+    socketio_success = True
+    for dep in socketio_dependencies:
+        if not run_command(f"pip install {dep}", f"Cài đặt {dep}"):
+            print(f"⚠️ Failed to install {dep}")
+            socketio_success = False
+    
+    if not socketio_success:
+        print("❌ Socket.IO installation failed!")
+        print("💡 Chạy script đặc biệt để fix:")
+        print("   python fix_socketio.py")
+        print("💡 Hoặc tiếp tục với mock socketio (một số tính năng sẽ bị disabled)")
+        
+        response = input("Tiếp tục build với mock socketio? (y/N): ").lower()
+        if response != 'y':
+            return False
+        
+        # Copy fallback file
+        try:
+            import shutil
+            if os.path.exists("socketio_fallback.py"):
+                print("✅ Sử dụng socketio fallback")
+            else:
+                print("❌ Không tìm thấy socketio_fallback.py")
+                return False
+        except Exception as e:
+            print(f"❌ Lỗi setup fallback: {str(e)}")
             return False
     
     return True
