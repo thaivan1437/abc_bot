@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import time
 from datetime import datetime
+from functools import partial
 import re as regex_module  # Rename to avoid conflict
 
 class LokBotGUI:
@@ -482,6 +483,10 @@ class LokBotGUI:
         
         # Initial terminal message
         self.terminal_message("Terminal ready. Start a bot to see output here.", "INFO")
+        
+        # Add test button for debugging
+        test_btn = ttk.Button(terminal_control_frame, text="Test Terminal", command=self.test_terminal_output)
+        test_btn.grid(row=0, column=3, padx=(10, 0))
     
     def terminal_message(self, message, level="INFO"):
         """Thêm message vào terminal"""
@@ -535,6 +540,15 @@ class LokBotGUI:
         except Exception as e:
             self.terminal_message(f"Error saving terminal output: {str(e)}", "ERROR")
             messagebox.showerror("Error", f"Failed to save terminal output: {str(e)}")
+    
+    def test_terminal_output(self):
+        """Test terminal output - for debugging"""
+        import time
+        self.terminal_message("Testing terminal output...", "INFO")
+        self.terminal_message("This is a test BOT message", "BOT")
+        self.terminal_message("This is a test WARNING message", "WARNING")
+        self.terminal_message("This is a test ERROR message", "ERROR")
+        self.terminal_message(f"Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}", "INFO")
     
     def load_profiles(self):
         """Load profiles từ file"""
@@ -696,6 +710,7 @@ class LokBotGUI:
             
             # Start bot process
             cmd = [sys.executable, '-m', 'lokbot', token]
+            self.terminal_message(f"Executing command: {' '.join(cmd[:3])} [TOKEN]", "INFO")
             process = subprocess.Popen(cmd, 
                                      stdout=subprocess.PIPE, 
                                      stderr=subprocess.STDOUT,
@@ -718,6 +733,7 @@ class LokBotGUI:
             
             self.log_message(f"Started bot for profile '{profile_name}'", "INFO")
             self.terminal_message(f"Started bot for profile '{profile_name}' with command: python -m lokbot {token[:20]}...", "INFO")
+            self.terminal_message("Waiting for bot output...", "INFO")
             
             # Auto switch to Terminal tab to show output
             self.notebook.select(4)  # Terminal tab is at index 4
@@ -757,6 +773,7 @@ class LokBotGUI:
     
     def read_bot_output(self, profile_name, process):
         """Đọc output từ bot process"""
+        self.root.after(0, lambda: self.terminal_message(f"Starting output reader for {profile_name}...", "INFO"))
         try:
             while True:
                 output = process.stdout.readline()
@@ -764,18 +781,22 @@ class LokBotGUI:
                     break
                 if output:
                     output_stripped = output.strip()
-                    # Display in both logs tab and terminal tab
-                    self.log_message(f"[{profile_name}] {output_stripped}", "BOT")
-                    self.terminal_message(f"[{profile_name}] {output_stripped}", "BOT")
+                    # Display in both logs tab and terminal tab using root.after for thread safety
+                    log_msg = f"[{profile_name}] {output_stripped}"
+                    # Use partial to avoid lambda closure issues
+                    self.root.after(0, partial(self.log_message, log_msg, "BOT"))
+                    self.root.after(0, partial(self.terminal_message, log_msg, "BOT"))
         except Exception as e:
-            self.log_message(f"Error reading bot output: {str(e)}", "ERROR")
-            self.terminal_message(f"Error reading bot output: {str(e)}", "ERROR")
+            error_msg = f"Error reading bot output: {str(e)}"
+            self.root.after(0, partial(self.log_message, error_msg, "ERROR"))
+            self.root.after(0, partial(self.terminal_message, error_msg, "ERROR"))
         finally:
             # Process ended
             if profile_name in self.running_processes:
                 del self.running_processes[profile_name]
                 self.profiles[profile_name]['status'] = 'Stopped'
-                self.terminal_message(f"Bot process for '{profile_name}' has ended", "WARNING")
+                end_msg = f"Bot process for '{profile_name}' has ended"
+                self.root.after(0, partial(self.terminal_message, end_msg, "WARNING"))
                 
                 # Update UI if this is the selected profile
                 if self.profile_name_var.get() == profile_name:
@@ -1228,6 +1249,7 @@ class LokBotGUI:
             
             # Start bot process
             cmd = [sys.executable, '-m', 'lokbot', token]
+            self.terminal_message(f"Executing command: {' '.join(cmd[:3])} [TOKEN]", "INFO")
             process = subprocess.Popen(cmd, 
                                      stdout=subprocess.PIPE, 
                                      stderr=subprocess.STDOUT,
@@ -1244,6 +1266,7 @@ class LokBotGUI:
             
             self.log_message(f"Started bot for profile '{profile_name}' from Status tab", "INFO")
             self.terminal_message(f"Started bot for profile '{profile_name}' from Status tab with command: python -m lokbot {token[:20]}...", "INFO")
+            self.terminal_message("Waiting for bot output...", "INFO")
             
             # Auto switch to Terminal tab to show output
             self.notebook.select(4)  # Terminal tab is at index 4
