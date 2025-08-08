@@ -203,8 +203,77 @@ class LokBotGUI:
     
     def create_status_tab(self):
         """Tạo tab trạng thái chi tiết"""
-        status_frame = ttk.Frame(self.notebook, padding="10")
-        self.notebook.add(status_frame, text="📊 Status")
+        # Main container frame
+        main_container = ttk.Frame(self.notebook)
+        self.notebook.add(main_container, text="📊 Status")
+        
+        # Create canvas and scrollbar for scrolling
+        canvas = tk.Canvas(main_container, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(main_container, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas, padding="10")
+        
+        # Configure scrolling
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack canvas and scrollbar
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Bind mousewheel to canvas for scroll (cross-platform)
+        def _on_mousewheel(event):
+            try:
+                # Windows and MacOS
+                if event.delta:
+                    canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+                # Linux
+                elif event.num == 4:
+                    canvas.yview_scroll(-1, "units")
+                elif event.num == 5:
+                    canvas.yview_scroll(1, "units")
+            except tk.TclError:
+                pass  # Canvas might be destroyed
+        
+        # Bind mousewheel events for different platforms
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)  # Windows and MacOS
+        canvas.bind_all("<Button-4>", _on_mousewheel)    # Linux
+        canvas.bind_all("<Button-5>", _on_mousewheel)    # Linux
+        
+        # Keyboard bindings for scrolling
+        def _on_key_scroll(event):
+            try:
+                if event.keysym == "Up":
+                    canvas.yview_scroll(-1, "units")
+                elif event.keysym == "Down":
+                    canvas.yview_scroll(1, "units")
+                elif event.keysym == "Page_Up":
+                    canvas.yview_scroll(-1, "pages")
+                elif event.keysym == "Page_Down":
+                    canvas.yview_scroll(1, "pages")
+                elif event.keysym == "Home":
+                    canvas.yview_moveto(0)
+                elif event.keysym == "End":
+                    canvas.yview_moveto(1)
+            except tk.TclError:
+                pass
+        
+        canvas.bind_all("<Key-Up>", _on_key_scroll)
+        canvas.bind_all("<Key-Down>", _on_key_scroll)
+        canvas.bind_all("<Key-Page_Up>", _on_key_scroll)
+        canvas.bind_all("<Key-Page_Down>", _on_key_scroll)
+        canvas.bind_all("<Key-Home>", _on_key_scroll)
+        canvas.bind_all("<Key-End>", _on_key_scroll)
+        
+        # Store canvas reference for potential cleanup
+        self.status_canvas = canvas
+        
+        # Now use scrollable_frame instead of status_frame for all content
+        status_frame = scrollable_frame
         
         # Profile selector cho status
         profile_frame = ttk.LabelFrame(status_frame, text="Select Profile", padding="5")
