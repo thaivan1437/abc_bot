@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 import time
 from datetime import datetime
-import re
+import re as regex_module  # Rename to avoid conflict
 
 class LokBotGUI:
     def __init__(self, root):
@@ -290,6 +290,50 @@ class LokBotGUI:
         
         self.last_update_label = ttk.Label(status_info_frame, text="Last Update: Never", font=("Arial", 9))
         self.last_update_label.grid(row=1, column=0, sticky=tk.W, pady=2)
+        
+        # Terminal Command Section
+        terminal_frame = ttk.LabelFrame(status_frame, text="💻 Terminal Command", padding="10")
+        terminal_frame.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        terminal_frame.columnconfigure(0, weight=1)
+        
+        # Command display
+        ttk.Label(terminal_frame, text="Command to run bot:", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
+        
+        self.command_text = tk.Text(terminal_frame, height=3, width=80, wrap=tk.WORD, 
+                                   font=("Consolas", 10), bg="#2d2d2d", fg="#ffffff",
+                                   insertbackground="#ffffff")
+        self.command_text.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        # Scrollbar for command text
+        command_scrollbar = ttk.Scrollbar(terminal_frame, orient=tk.VERTICAL, command=self.command_text.yview)
+        command_scrollbar.grid(row=1, column=1, sticky=(tk.N, tk.S))
+        self.command_text.config(yscrollcommand=command_scrollbar.set)
+        
+        # Token Input Section
+        token_input_frame = ttk.LabelFrame(status_frame, text="🔑 Token Input", padding="10")
+        token_input_frame.grid(row=5, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        token_input_frame.columnconfigure(0, weight=1)
+        
+        # Token textarea
+        ttk.Label(token_input_frame, text="X-Access-Token:", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
+        
+        self.token_textarea = tk.Text(token_input_frame, height=4, width=80, wrap=tk.WORD,
+                                     font=("Consolas", 9), bg="#f8f9fa", fg="#333333")
+        self.token_textarea.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 5))
+        
+        # Scrollbar for token textarea
+        token_scrollbar = ttk.Scrollbar(token_input_frame, orient=tk.VERTICAL, command=self.token_textarea.yview)
+        token_scrollbar.grid(row=1, column=1, sticky=(tk.N, tk.S))
+        self.token_textarea.config(yscrollcommand=token_scrollbar.set)
+        
+        # Token buttons
+        token_btn_frame = ttk.Frame(token_input_frame)
+        token_btn_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(5, 0))
+        
+        ttk.Button(token_btn_frame, text="📋 Copy Token", command=self.copy_token_from_textarea).grid(row=0, column=0, padx=(0, 5))
+        ttk.Button(token_btn_frame, text="🔄 Load from Profile", command=self.load_token_to_textarea).grid(row=0, column=1, padx=5)
+        ttk.Button(token_btn_frame, text="💾 Save to Profile", command=self.save_token_from_textarea).grid(row=0, column=2, padx=5)
+        ttk.Button(token_btn_frame, text="🚀 Run Bot", command=self.run_bot_from_textarea).grid(row=0, column=3, padx=(5, 0))
         
         # Configure grid weights
         status_frame.columnconfigure(0, weight=1)
@@ -745,12 +789,19 @@ class LokBotGUI:
     def refresh_status(self):
         """Refresh thông tin status"""
         profile_name = self.status_profile_var.get()
-        if not profile_name or profile_name not in self.running_processes:
+        if not profile_name:
             self.clear_status_display()
+            self.update_terminal_command()
             return
+            
+        if profile_name not in self.running_processes:
+            self.clear_status_display()
+        else:
+            # Đọc thống kê từ log file hoặc từ bot process
+            self.update_status_display(profile_name)
         
-        # Đọc thống kê từ log file hoặc từ bot process
-        self.update_status_display(profile_name)
+        # Cập nhật terminal command
+        self.update_terminal_command(profile_name)
     
     def clear_status_display(self):
         """Clear hiển thị status"""
@@ -839,12 +890,12 @@ class LokBotGUI:
             log_content = self.log_text.get(1.0, tk.END)
             
             # Đếm số mỏ từ logs
-            mines_matches = re.findall(r'Tổng số mỏ đã khai thác: (\d+)', log_content)
+            mines_matches = regex_module.findall(r'Tổng số mỏ đã khai thác: (\d+)', log_content)
             if mines_matches:
                 mines_gathered = int(mines_matches[-1])  # Lấy số cuối cùng
             
             # Đếm số quái từ logs  
-            monsters_matches = re.findall(r'Tổng số quái đã đánh: (\d+)', log_content)
+            monsters_matches = regex_module.findall(r'Tổng số quái đã đánh: (\d+)', log_content)
             if monsters_matches:
                 monsters_killed = int(monsters_matches[-1])  # Lấy số cuối cùng
         
@@ -872,6 +923,154 @@ class LokBotGUI:
             'march_limit': 3,
             'troop_queue_count': 2
         }
+    
+    def copy_token_from_textarea(self):
+        """Copy token từ textarea vào clipboard"""
+        try:
+            token = self.token_textarea.get(1.0, tk.END).strip()
+            if token:
+                self.root.clipboard_clear()
+                self.root.clipboard_append(token)
+                self.log_message("Token copied to clipboard!", "INFO")
+            else:
+                messagebox.showwarning("Warning", "Token textarea is empty!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to copy token: {str(e)}")
+    
+    def load_token_to_textarea(self):
+        """Load token từ profile hiện tại vào textarea"""
+        profile_name = self.status_profile_var.get()
+        if not profile_name:
+            messagebox.showwarning("Warning", "Please select a profile first!")
+            return
+        
+        if profile_name in self.profiles:
+            token = self.profiles[profile_name].get('token', '')
+            self.token_textarea.delete(1.0, tk.END)
+            self.token_textarea.insert(1.0, token)
+            self.log_message(f"Token loaded from profile '{profile_name}'", "INFO")
+        else:
+            messagebox.showerror("Error", f"Profile '{profile_name}' not found!")
+    
+    def save_token_from_textarea(self):
+        """Save token từ textarea vào profile hiện tại"""
+        profile_name = self.status_profile_var.get()
+        if not profile_name:
+            messagebox.showwarning("Warning", "Please select a profile first!")
+            return
+        
+        token = self.token_textarea.get(1.0, tk.END).strip()
+        if not token:
+            messagebox.showwarning("Warning", "Token textarea is empty!")
+            return
+        
+        if profile_name not in self.profiles:
+            self.profiles[profile_name] = {}
+        
+        self.profiles[profile_name]['token'] = token
+        self.save_profiles()
+        self.log_message(f"Token saved to profile '{profile_name}'", "INFO")
+        messagebox.showinfo("Success", f"Token saved to profile '{profile_name}'!")
+    
+    def run_bot_from_textarea(self):
+        """Chạy bot với token từ textarea"""
+        token = self.token_textarea.get(1.0, tk.END).strip()
+        if not token:
+            messagebox.showwarning("Warning", "Please enter a token!")
+            return
+        
+        profile_name = self.status_profile_var.get()
+        if not profile_name:
+            # Tạo profile mới với timestamp
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%H%M%S")
+            profile_name = f"Quick_Run_{timestamp}"
+            self.profiles[profile_name] = {'token': token, 'config': self.get_default_config()}
+            self.status_profile_var.set(profile_name)
+            self.status_profile_combo['values'] = list(self.profiles.keys())
+        
+        # Update token trong profile
+        self.profiles[profile_name]['token'] = token
+        
+        # Chạy bot
+        self.start_bot_for_profile(profile_name)
+    
+    def update_terminal_command(self, profile_name=None):
+        """Cập nhật terminal command hiển thị"""
+        if not profile_name:
+            profile_name = self.status_profile_var.get()
+        
+        if profile_name and profile_name in self.profiles:
+            token = self.profiles[profile_name].get('token', 'YOUR_TOKEN_HERE')
+            
+            # Tạo command với nhiều cách chạy
+            commands = [
+                "# Method 1: Direct command",
+                f"python3 -m lokbot \"{token}\"",
+                "",
+                "# Method 2: Using GUI",
+                "python3 lokbot/gui_main.py",
+                "",
+                "# Method 3: Docker (if available)",
+                f"docker run -e TOKEN=\"{token}\" ghcr.io/hldh214/lok_bot",
+                "",
+                "# Note: Replace YOUR_TOKEN_HERE with your actual X-Access-Token"
+            ]
+            
+            command_text = "\n".join(commands)
+        else:
+            command_text = "# Select a profile to see terminal commands\npython3 -m lokbot YOUR_TOKEN_HERE"
+        
+        # Update command display
+        self.command_text.config(state=tk.NORMAL)
+        self.command_text.delete(1.0, tk.END)
+        self.command_text.insert(1.0, command_text)
+        self.command_text.config(state=tk.DISABLED)  # Make read-only
+    
+    def start_bot_for_profile(self, profile_name):
+        """Start bot cho profile cụ thể (từ status tab)"""
+        if profile_name in self.running_processes:
+            messagebox.showwarning("Warning", f"Bot for '{profile_name}' is already running!")
+            return
+        
+        token = self.profiles[profile_name].get('token', '').strip()
+        if not token:
+            messagebox.showerror("Error", "Token is empty!")
+            return
+        
+        try:
+            # Create config file for this profile
+            config_data = self.profiles[profile_name].get('config', self.get_default_config())
+            config_filename = f"config_{profile_name}.json"
+            
+            with open(config_filename, 'w', encoding='utf-8') as f:
+                json.dump(config_data, f, indent=2, ensure_ascii=False)
+            
+            # Start bot process
+            cmd = [sys.executable, '-m', 'lokbot', token]
+            process = subprocess.Popen(cmd, 
+                                     stdout=subprocess.PIPE, 
+                                     stderr=subprocess.STDOUT,
+                                     universal_newlines=True,
+                                     bufsize=1)
+            
+            self.running_processes[profile_name] = process
+            self.profiles[profile_name]['status'] = 'Running'
+            self.profiles[profile_name]['start_time'] = time.time()
+            
+            # Start thread to read output
+            threading.Thread(target=self.read_bot_output, 
+                           args=(profile_name, process), daemon=True).start()
+            
+            self.log_message(f"Started bot for profile '{profile_name}' from Status tab", "INFO")
+            self.save_profiles()
+            
+            # Update display
+            self.refresh_status()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to start bot: {str(e)}")
+            self.log_message(f"Failed to start bot for '{profile_name}': {str(e)}", "ERROR")
 
     def update_status_timer(self):
         """Timer để cập nhật status"""
@@ -888,8 +1087,12 @@ class LokBotGUI:
             self.status_profile_combo['values'] = current_profiles
             
             # Auto refresh if profile is selected
-            if self.status_profile_var.get() in self.running_processes:
-                self.update_status_display(self.status_profile_var.get())
+            profile_name = self.status_profile_var.get()
+            if profile_name:
+                if profile_name in self.running_processes:
+                    self.update_status_display(profile_name)
+                # Always update terminal command
+                self.update_terminal_command(profile_name)
         
         # Schedule next update
         self.root.after(5000, self.update_status_timer)  # Update every 5 seconds
