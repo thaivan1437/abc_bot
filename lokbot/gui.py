@@ -164,8 +164,9 @@ class LokBotGUI:
         self.config_profile_combo.grid(row=0, column=1, padx=(0, 10))
         self.config_profile_combo.bind('<<ComboboxSelected>>', self.load_config_for_profile)
         
-        ttk.Button(config_select_frame, text="Load Default", command=self.load_default_config).grid(row=0, column=2, padx=(0, 10))
-        ttk.Button(config_select_frame, text="Save Config", command=self.save_config).grid(row=0, column=3)
+        ttk.Button(config_select_frame, text="Load Default", command=self.load_default_config).grid(row=0, column=2, padx=(0, 5))
+        ttk.Button(config_select_frame, text="Load Example", command=self.load_example_config).grid(row=0, column=3, padx=(0, 5))
+        ttk.Button(config_select_frame, text="Save Config", command=self.save_config).grid(row=0, column=4)
         
         # Config editor (JSON)
         ttk.Label(config_frame, text="Configuration (JSON):").grid(row=1, column=0, sticky=tk.W, pady=(0, 5))
@@ -470,7 +471,22 @@ class LokBotGUI:
         self.stop_btn.config(state=tk.DISABLED)
     
     def get_default_config(self):
-        """Lấy config mặc định"""
+        """Lấy config mặc định từ config.example.json"""
+        try:
+            config_example_path = Path("config.example.json")
+            if config_example_path.exists():
+                with open(config_example_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            else:
+                # Fallback config nếu không tìm thấy config.example.json
+                self.log_message("config.example.json not found, using fallback config", "WARNING")
+                return self._get_fallback_config()
+        except Exception as e:
+            self.log_message(f"Error loading config.example.json: {str(e)}", "ERROR")
+            return self._get_fallback_config()
+    
+    def _get_fallback_config(self):
+        """Config dự phòng khi không load được config.example.json"""
         return {
             "main": {
                 "jobs": [
@@ -481,7 +497,7 @@ class LokBotGUI:
                             "gift_claim": True,
                             "help_all": True,
                             "research_donate": True,
-                            "shop_auto_buy_item_code_list": [10101008]
+                            "shop_auto_buy_item_code_list": []
                         },
                         "interval": {"start": 120, "end": 200}
                     },
@@ -489,24 +505,33 @@ class LokBotGUI:
                         "name": "socf_thread",
                         "enabled": True,
                         "kwargs": {
-                            "object_code_list": [20100105, 20200104],
-                            "radius": 8
+                            "targets": [
+                                {
+                                    "code": 20100105,
+                                    "level": [1]
+                                }
+                            ],
+                            "radius": 8,
+                            "share_to": {
+                                "chat_channels": []
+                            }
                         },
                         "interval": {"start": 1, "end": 1}
                     }
                 ],
                 "threads": [
                     {
-                        "name": "building_farmer_thread",
-                        "enabled": True,
-                        "kwargs": {"speedup": True}
+                        "name": "free_chest_farmer_thread",
+                        "enabled": True
                     },
                     {
-                        "name": "academy_farmer_thread",
-                        "enabled": True,
-                        "kwargs": {"to_max_level": False}
+                        "name": "quest_monitor_thread",
+                        "enabled": True
                     }
                 ]
+            },
+            "socketio": {
+                "debug": False
             }
         }
     
@@ -515,6 +540,26 @@ class LokBotGUI:
         config = self.get_default_config()
         self.config_text.delete(1.0, tk.END)
         self.config_text.insert(1.0, json.dumps(config, indent=2, ensure_ascii=False))
+    
+    def load_example_config(self):
+        """Load config từ config.example.json vào editor"""
+        try:
+            config_example_path = Path("config.example.json")
+            if config_example_path.exists():
+                with open(config_example_path, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                self.config_text.delete(1.0, tk.END)
+                self.config_text.insert(1.0, json.dumps(config, indent=2, ensure_ascii=False))
+                self.log_message("Loaded config from config.example.json", "INFO")
+            else:
+                messagebox.showerror("Error", "config.example.json not found!")
+                self.log_message("config.example.json not found", "ERROR")
+        except json.JSONDecodeError as e:
+            messagebox.showerror("Error", f"Invalid JSON in config.example.json: {str(e)}")
+            self.log_message(f"Invalid JSON in config.example.json: {str(e)}", "ERROR")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error loading config.example.json: {str(e)}")
+            self.log_message(f"Error loading config.example.json: {str(e)}", "ERROR")
     
     def load_config_for_profile(self, event=None):
         """Load config cho profile được chọn"""
